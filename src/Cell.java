@@ -2,23 +2,23 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Point;
 
-public class Cell {
+import java.awt.Rectangle;
+
+public class Cell extends Rectangle {
   // fields
-  int x;
-  int y;
   static int size = 35;
 
   // constructors
   public Cell(int inX, int inY) {
-    x = inX;
-    y = inY;
+    super(inX, inY, size, size);
   }
 
   // methods
-  public void paint(Graphics g, Point mousePos) {
-    if(contains(mousePos)) {
+  public void paint(Graphics g, Point mousePos, Actor[] actors) {
+    if (mousePos != null && contains(mousePos)) {
       g.setColor(Color.GRAY);
-    } else {
+    }
+    else {
       g.setColor(Color.WHITE);
     }
     g.fillRect(x, y, size, size);
@@ -26,9 +26,18 @@ public class Cell {
     g.drawRect(x, y, size, size);
   }
 
-  public boolean contains(Point p) {
-    if(p != null) {
-      return x < p.x && x+size > p.x && y < p.y && y+size > p.y;
+  @Override
+  public boolean contains(Rectangle p) {
+    if (p != null) {
+      return x < p.x && x + size > p.x && y < p.y && y + size > p.y;
+    } else {
+      return false;
+    }
+  }
+
+  public boolean containsActor(Actor a) {
+    if (a != null) {
+      return x < a.x && x + size > a.x && y < a.y && y + size > a.y;
     } else {
       return false;
     }
