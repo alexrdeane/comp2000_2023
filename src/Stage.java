@@ -4,7 +4,6 @@ import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 
 public class Stage {
   Grid grid;
@@ -28,16 +27,16 @@ public class Stage {
     if(currentState == State.BotMoving) {
       for(Actor a: actors) {
         if(!a.isHuman()) {
-          List<Cell> possibleLocs = getClearRadius(a.loc, a.moves);
-          int moveBotChooses = (new Random()).nextInt(possibleLocs.size());
-          a.setLocation(possibleLocs.get(moveBotChooses));
+          List<Cell> possibleLocs = grid.getRadius(a.getLocation(), a.getMoves());
+          Cell nextLoc = a.strat.chooseNextLoc(possibleLocs);
+          a.setLocation(nextLoc);
         }
       }
       currentState = State.ChoosingActor;
       for(Actor a: actors) {
         a.turns = 1;
       }
-    }
+  }
     grid.paint(g, mouseLoc);
     grid.paintOverlay(g, cellOverlay, new Color(0f, 0f, 1f, 0.5f));
     for(Actor a: actors) {
@@ -72,20 +71,18 @@ public class Stage {
       yLoc = yLoc + 2*blockVT;
       g.drawString(a.getClass().toString(), margin, yLoc);
       g.drawString("location:", labelIndent, yLoc+vTab);
-      g.drawString(Character.toString(a.loc.col) + Integer.toString(a.loc.row), valueIndent, yLoc+vTab);
+      g.drawString(Character.toString(a.getLocation().col) + Integer.toString(a.getLocation().row), valueIndent, yLoc+vTab);
       g.drawString("artificiality:", labelIndent, yLoc+2*vTab);
       g.drawString(a.isHuman() ? "Human" : "Bot", valueIndent, yLoc+2*vTab);
+      g.drawString("strategy:", labelIndent, yLoc+3*vTab);
+      g.drawString(a.strat.toString(), valueIndent, yLoc+3*vTab);
     }    
-    yLoc = yLoc + 3*blockVT;
-    Motif torch = new Motif("assets/torch.png");
-    Float phase = 0.5f;
-    torch.draw(g, labelIndent, yLoc, Color.getHSBColor(phase, 0.5f, 1.0f));
   }
 
   public List<Cell> getClearRadius(Cell from, int size) {
     List<Cell> init = grid.getRadius(from, size);
     for(Actor a: actors) {
-      init.remove(a.loc);
+      init.remove(a.getLocation());
     }
     return init;
   }
@@ -95,8 +92,8 @@ public class Stage {
       case ChoosingActor:
         actorInAction = Optional.empty();
         for(Actor a: actors) {
-          if(a.loc.contains(x, y) && a.isHuman()) {
-            cellOverlay = grid.getRadius(a.loc, a.moves);
+          if(a.getLocation().contains(x, y) && a.isHuman()) {
+            cellOverlay = grid.getRadius(a.getLocation(), a.getMoves());
             actorInAction = Optional.of(a);
             currentState = State.SelectingNewLocation;
           }
@@ -111,6 +108,22 @@ public class Stage {
         }
         cellOverlay = new ArrayList<Cell>();
         if(clicked.isPresent() && actorInAction.isPresent()) {
+          Optional<Actor> otherActor = Optional.empty();
+          for(Actor a: actors) {
+            if(clicked.get().equals(a.getLocation())) {
+              // if(!actorInAction.get().equals(a)) {
+              if(actorInAction.get().isHuman() != a.isHuman()) {
+                otherActor = Optional.of(a);
+              }
+            }
+          }
+          if(otherActor.isPresent()) {
+              Actor newActor = new StackedActor(actorInAction.get(), otherActor.get());
+              actors.add(newActor);
+              actors.remove(actorInAction.get());
+              actors.remove(otherActor.get());
+              actorInAction = Optional.of(newActor);
+          }
           actorInAction.get().setLocation(clicked.get());
           actorInAction.get().turns--;
           int humansWithMovesLeft = 0;
