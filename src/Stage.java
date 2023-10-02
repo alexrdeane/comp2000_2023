@@ -61,7 +61,7 @@ public class Stage {
       g.drawString(coord, margin, yLoc);
     }
 
-    // agent display
+    // agent displays
     final int vTab = 15;
     final int labelIndent = margin + hTab;
     final int valueIndent = margin + 3*blockVT;
